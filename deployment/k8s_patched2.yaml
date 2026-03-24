@@ -1,0 +1,139 @@
+---
+# ------------------------------------#
+# Namespace                           #
+# ------------------------------------#
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gnosis
+spec:
+  finalizers:
+    - kubernetes
+---
+# ------------------------------------#
+# ConfigMap                           #
+# ------------------------------------#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gnosis-main-service
+  namespace: gnosis
+data:
+  DATABASE_URL: mysql://damsog38:adminpass123@db4free.net/videoanalytics
+  SERVER: 192.168.1.3
+  PORT: "4000"
+  PORT_SWAGGER: "4000"
+  LOGGER_LEVEL: debug
+  NODE_ENV: development
+  SSL_KEY: ./certificates/client-key.pem
+  SSL_CERT: ./certificates/client-cert.pem
+  TOKEN_KEY: myserverkeytest
+  FACE_ANALYTICS_SERVER: 192.168.1.3
+  FACE_ANALYTICS_PORT: "5000"
+  RESOURCES_PATH: /mnt/72086E48086E0C03/Projects/VideoAnalytics_Server/resources/
+  SFTP_HOST: 192.168.1.3
+  SFTP_PORT: "2222"
+  SFTP_USER: admin
+  SFTP_PASSWORD: "1111"
+
+---
+# ------------------------------------#
+# Deployment                          #
+# ------------------------------------#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gnosis-main-service
+  namespace: gnosis
+  labels:
+    app: gnosis-main-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gnosis-main-service
+  template:
+    metadata:
+      labels:
+        app: gnosis-main-service
+    spec:
+      containers:
+      - name: gnosis-main-service
+        image: laguzs/gnosis_main_service:1.3.5
+        envFrom:
+          - configMapRef:
+              name: gnosis-main-service
+        resources:
+          requests:
+            cpu: 100m
+            memory: 700Mi
+          limits:
+            cpu: 1000m
+            memory: 700Mi
+        ports:
+          - containerPort: 4000
+
+---
+# ------------------------------------#
+# Internal Service                    #
+# ------------------------------------#
+apiVersion: v1
+kind: Service
+metadata:
+  name: gnosis-main-service
+  labels:
+    app: gnosis-main-service
+  namespace: gnosis
+spec:
+  type: ClusterIP
+  selector:
+    app: gnosis-main-service
+  ports:
+    - protocol: TCP
+      port: 443
+      targetPort: 4000
+      name: https
+---
+# ------------------------------------#
+# Ingress                             #
+# ------------------------------------#
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gnosis-main-service
+  labels:
+    name: gnosis-main-service
+spec:
+  rules:
+  - host: gnosis.com
+    http:
+      paths:
+      - path: "/"
+        pathType: Prefix
+        backend:
+          service:
+            name: gnosis-main-service
+            port: 
+              number: 443
+
+---
+# ------------------------------------#
+# Service Node                        #
+# ------------------------------------#
+apiVersion: v1
+kind: Service
+metadata:
+  name: gnosis-main-service-node
+  labels:
+    app: gnosis-main-service
+  namespace: gnosis
+spec:
+  type: NodePort
+  selector:
+    app: gnosis-main-service
+  ports:
+    - protocol: TCP
+      port: 443
+      targetPort: 4000
+      nodePort: 30100
+      name: https

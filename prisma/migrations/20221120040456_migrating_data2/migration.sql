@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE `Image` ALTER COLUMN `name` DROP DEFAULT,
-    ALTER COLUMN `path` DROP DEFAULT;
