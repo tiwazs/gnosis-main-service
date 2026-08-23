@@ -94,7 +94,12 @@ app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs)); // swag
 
 
 // Middlewares Used
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'ngrok-skip-browser-warning'],
+}));
 //app.use(morgan('[:date[iso]] : : :method : : :url : : HTTP/:http-version : : :status', {"stream": logger.stream.write}));
 app.use(customMorgan);
 app.use(express.urlencoded({extended: false}));

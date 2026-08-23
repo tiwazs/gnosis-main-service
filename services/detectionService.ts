@@ -13,10 +13,15 @@ export class DetectionService{
 
         // Setting configuration of the request
         var url = `http://${process.env.FACE_ANALYTICS_SERVER}:${process.env.FACE_ANALYTICS_PORT}/detector/stream`;
+        const startedAt = Date.now();
+        logger.info(`detection: POST ${url} FACE_ANALYTICS_SERVER=${process.env.FACE_ANALYTICS_SERVER} FACE_ANALYTICS_PORT=${process.env.FACE_ANALYTICS_PORT} offerType=${offerType} offerSdpChars=${offerSdp?.length ?? 0}`);
 
-        // Requesting to the Recognition Service
-        // Getting response for the signaling
-        const faservice_response = await axios.post(url, form, { headers: form.getHeaders() });
+        const faservice_response = await axios.post(url, form, {
+            headers: form.getHeaders(),
+            timeout: 25000,
+        });
+
+        logger.info(`detection: upstream ${faservice_response.status} in ${Date.now() - startedAt}ms keys=${Object.keys(faservice_response.data || {}).join(",")}`);
 
         const answerSdp = {
             "sdp" : faservice_response.data["sdp"],
