@@ -111,6 +111,7 @@ app.use('/api/image', authenticatorAPI, require('./controllers/imageController')
 app.use('/api/profile-group', authenticatorAPI, require('./controllers/profileGroupController'));
 app.use('/api/detection', authenticatorAPI, require('./controllers/detectionController'));
 app.use('/api/recognition', authenticatorAPI, require('./controllers/recognitionController'));
+app.use('/api/processing', authenticatorAPI, require('./controllers/processingController'));
 
 // ssl certificate
 let sslOptions;
