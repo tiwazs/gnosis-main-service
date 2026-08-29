@@ -90,7 +90,7 @@ if (!fs.existsSync(process.env.RESOURCES_PATH!)) {
 
 // General Server settigs
 app.set('port', process.env.PORT || 4000);
-app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs)); // swagger route
+app.use('/main/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs)); // swagger route
 
 
 // Middlewares Used
