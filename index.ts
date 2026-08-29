@@ -45,7 +45,7 @@ const swaggerOptions = {
         },
         servers: [
             {
-                url: `http${(process.env.SSL_KEY && process.env.SSL_CERT) ? 's' : ''}://${process.env.SERVER}:${process.env.PORT_SWAGGER}`,
+                url: `http${(process.env.SSL_KEY && process.env.SSL_CERT) ? 's' : 's'}://${process.env.SERVER}:${process.env.PORT_SWAGGER}`,
            },
         ],
         components: {
