@@ -1,40 +1,43 @@
-# Build step
-FROM node:18 as builder
+FROM node:18-bullseye-slim AS builder
 
 WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends openssl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 COPY prisma ./prisma
 
 RUN npm ci
+RUN npx prisma generate
 
 COPY . .
 
 RUN npm run build
 
-# Production step
-FROM node:18-slim
+FROM node:18-bullseye-slim
 
 WORKDIR /app
 
-COPY package*.json ./
-
-RUN npm ci --only=production --quiet
 RUN apt-get update && \
-    apt-get install -y wget && \
-    wget http://security.debian.org/debian-security/pool/updates/main/o/openssl1.1/libssl1.1_1.1.1n-0+deb10u5_amd64.deb && \
-    dpkg -i libssl1.1_1.1.1n-0+deb10u5_amd64.deb || true
+    apt-get install -y --no-install-recommends openssl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/prisma ./prisma
-# Generate Prisma Client
+ENV NODE_ENV=production
+
+COPY package*.json ./
+COPY prisma ./prisma
+
+RUN npm ci --omit=dev
 RUN npx prisma generate
 
 COPY --from=builder /app/dist ./dist
-
 COPY --from=builder /app/dataModels ./dataModels
 COPY --from=builder /app/controllers ./controllers
-RUN mkdir /app/dist/tmp
 
-EXPOSE 3000
+RUN mkdir -p /app/dist/tmp
+
+EXPOSE 4000
 
 CMD ["npm", "run", "start:migrate:prod"]
