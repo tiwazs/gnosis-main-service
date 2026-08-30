@@ -20,8 +20,6 @@ import https from 'https';
 import swaggerJsDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
-import authenticator from './middlewares/authenticator';
-import authenticatorAPI from './middlewares/authenticatorAPI';
 
 // Style & Color
 import logger from './lib/logger';
@@ -54,7 +52,8 @@ const swaggerOptions = {
                     type: "http",
                     scheme: "bearer",
                     in: "header",
-                    bearerFormat: "JWT"
+                    bearerFormat: "JWT",
+                    description: "JWT from login, or an API key. Paste the token only; Swagger sends Authorization: Bearer <token>.",
                 },
             }
         },
@@ -90,7 +89,9 @@ if (!fs.existsSync(process.env.RESOURCES_PATH!)) {
 
 // General Server settigs
 app.set('port', process.env.PORT || 4000);
-app.use('/main/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs)); // swagger route
+app.use('/main/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
+    swaggerOptions: { persistAuthorization: true },
+}));
 
 
 // Middlewares Used
@@ -98,7 +99,7 @@ app.use(cors({
     origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'ngrok-skip-browser-warning'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'ngrok-skip-browser-warning', 'X-User-Id', 'X-User-Email', 'X-Auth-Method', 'X-Gateway-Secret'],
 }));
 //app.use(morgan('[:date[iso]] : : :method : : :url : : HTTP/:http-version : : :status', {"stream": logger.stream.write}));
 app.use(customMorgan);
@@ -107,16 +108,17 @@ app.use(express.json({limit: '50mb'}));
 
 // Access and User API
 app.use('/api/access', require('./controllers/authenticationController'));
-app.use('/api/user', authenticator, require('./controllers/userController'));
+app.use('/internal/auth', require('./controllers/internalAuthController'));
+app.use('/api/user', require('./controllers/userController'));
 
-// API
-app.use('/api/profile', authenticatorAPI, require('./controllers/profileController'));
-app.use('/api/group', authenticatorAPI, require('./controllers/groupController'));
-app.use('/api/image', authenticatorAPI, require('./controllers/imageController'));
-app.use('/api/profile-group', authenticatorAPI, require('./controllers/profileGroupController'));
-app.use('/api/detection', authenticatorAPI, require('./controllers/detectionController'));
-app.use('/api/recognition', authenticatorAPI, require('./controllers/recognitionController'));
-app.use('/api/processing', authenticatorAPI, require('./controllers/processingController'));
+// API (authentication is on the gateway)
+app.use('/api/profile', require('./controllers/profileController'));
+app.use('/api/group', require('./controllers/groupController'));
+app.use('/api/image', require('./controllers/imageController'));
+app.use('/api/profile-group', require('./controllers/profileGroupController'));
+app.use('/api/detection', require('./controllers/detectionController'));
+app.use('/api/recognition', require('./controllers/recognitionController'));
+app.use('/api/processing', require('./controllers/processingController'));
 
 // ssl certificate
 let sslOptions;

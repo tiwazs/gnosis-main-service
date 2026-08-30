@@ -20,15 +20,7 @@ export class AuthenticationService {
         if( !(await Encryptor.matchPassword(password, user.password!)) ){ throw new Error("Invalid Credentials"); }
         
         logger.debug( `Password matched` );
-        // Creating an access token for the user
-        const token = jwt.sign(
-            {
-                userId: user.id, 
-                email: email
-            },
-            process.env.TOKEN_KEY!,
-            {expiresIn: "1h"}
-        );
+        const token = this.signToken(user.id, email);
         logger.debug( `Token generated: ${token}` );
         
         // Appends the token to the response | Weird casting from moongoose object to JSON
@@ -51,6 +43,25 @@ export class AuthenticationService {
         });
 
         return userCreated;
+    }
+
+    static signToken(userId: string, email: string): string {
+        return jwt.sign(
+            { userId, email },
+            process.env.TOKEN_KEY!,
+            { expiresIn: "1h" }
+        );
+    }
+
+    static async issueTokenForUser(userId: string): Promise<{ token: string; userId: string; email: string }> {
+        const user = await UserService.getById(userId);
+        if (!user) { throw new Error("User not found"); }
+        const email = user.email ?? "";
+        return {
+            token: this.signToken(user.id, email),
+            userId: user.id,
+            email,
+        };
     }
 
 }
