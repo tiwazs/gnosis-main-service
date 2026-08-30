@@ -1,48 +1,40 @@
-FROM node:18-bullseye-slim AS builder
+# Build step
+FROM node:18 as builder
 
 WORKDIR /app
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends openssl ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 COPY prisma ./prisma
 
 RUN npm ci
-RUN npx prisma generate
 
 COPY . .
 
 RUN npm run build
 
-FROM node:18-bullseye-slim
+# Production step
+FROM node:18-slim
 
 WORKDIR /app
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends openssl libssl1.1 ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
-
-ENV NODE_ENV=production
-
 COPY package*.json ./
-COPY prisma ./prisma
 
-RUN npm ci --omit=dev
+RUN npm ci --only=production --quiet
+RUN apt-get update && \
+    apt-get install -y wget && \
+    wget http://security.debian.org/debian-security/pool/updates/main/o/openssl1.1/libssl1.1_1.1.1n-0+deb10u5_amd64.deb && \
+    dpkg -i libssl1.1_1.1.1n-0+deb10u5_amd64.deb || true
 
-# Use the engines generated in the builder. Do not run `npx prisma generate` here:
-# prisma is a devDependency, so npx would download a different CLI and crash Node.
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/prisma ./prisma
+# Generate Prisma Client
+RUN npx prisma generate
 
 COPY --from=builder /app/dist ./dist
+
 COPY --from=builder /app/dataModels ./dataModels
 COPY --from=builder /app/controllers ./controllers
+RUN mkdir /app/dist/tmp
 
-RUN mkdir -p /app/dist/tmp
-
-EXPOSE 4000
+EXPOSE 3000
 
 CMD ["npm", "run", "start:migrate:prod"]
