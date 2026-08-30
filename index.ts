@@ -32,6 +32,8 @@ import figlet from 'figlet';
  *                                           Configurations
 *************************************************************************************************/
 
+const swaggerHttps = /^(1|true|yes)$/i.test(process.env.SWAGGER_HTTPS || '');
+
 // Swagger Documentation confifguration
 const swaggerOptions = {
     definition: {
@@ -43,7 +45,7 @@ const swaggerOptions = {
         },
         servers: [
             {
-                url: `http${(process.env.SSL_KEY && process.env.SSL_CERT) ? 's' : ''}://${process.env.SERVER}:${process.env.PORT_SWAGGER}`,
+                url: `http${swaggerHttps ? 's' : ''}://${process.env.SERVER}:${process.env.PORT_SWAGGER}`,
            },
         ],
         components: {
